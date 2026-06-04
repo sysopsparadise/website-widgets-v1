@@ -27,13 +27,22 @@
   <script type="module">
     import { createChat } from 'https://cdn.jsdelivr.net/npm/@n8n/chat/dist/chat.bundle.es.js';
     createChat({
-      webhookUrl: 'https://n8n.patom.dev/webhook/b1f5269f-a52e-46e7-aff2-ea4103f5eae0/chat',
-      mode: 'window',
-      showWelcomeScreen: false,
-      initialMessages: [
-        'Welcome to Paradise Real Estate 👋 This is Ana. How can I help you today?'
-      ],
-    });
+  webhookUrl: 'https://n8n.patom.dev/webhook/b1f5269f-a52e-46e7-aff2-ea4103f5eae0/chat',
+  mode: 'window',
+  showWelcomeScreen: false,
+  initialMessages: [
+    'Welcome to Paradise Real Estate 👋 This is Ana. How can I help you today?'
+  ],
+  i18n: {
+    en: {
+      title: 'Paradise Real Estate',
+      subtitle: "Find your place on the Costa Blanca — Ana's here to help.",
+      footer: '',
+      getStarted: 'New Conversation',
+      inputPlaceholder: 'Type your message…',
+    },
+  },
+});
   </script>
 </body>
 </html>
