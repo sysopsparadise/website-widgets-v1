@@ -6,35 +6,13 @@
   <title>Paradise Chat Test</title>
   <link href="https://cdn.jsdelivr.net/npm/@n8n/chat/dist/style.css" rel="stylesheet" />
   <style>
-    /* Logo above the title in the chat header */
-.chat-header::before {
-  content: "";
-  display: block;
-  width: 150px;
-  height: 46px;
-  margin: 0 0 6px;
-  background-image: url("https://www.paradiserealestate.es/crm/pages/agencies/paradisepro/assets/logofooter.svg");
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: left center;
-}
-    /* Header polish — tighter spacing */
-:root {
-  --chat--header--padding: 1.25rem 1.5rem;
-  --chat--heading--font-size: 1.7em;
-  --chat--subtitle--line-height: 1.4;
-}
-.chat-header h1 {             /* title */
-  margin: 0 0 6px !important; /* kills the big gap before subtitle */
-  line-height: 1.15 !important;
-}
-.chat-header p {              /* subtitle */
-  margin: 0 !important;
-  opacity: 0.9;
-}
-    .chat-header { text-align: center; }
-  .chat-header::before { margin: 0 auto 6px !important; background-position: center; }
-    body { font-family: system-ui, sans-serif; padding: 3rem; background: #f6f7f9; }
+    body {
+      font-family: system-ui, sans-serif;
+      padding: 3rem;
+      background: #f6f7f9;
+    }
+
+    /* ---- Brand colors + header sizing ---- */
     :root {
       --chat--color--primary: #16324f;
       --chat--color--primary-shade-50: #122a42;
@@ -45,6 +23,38 @@
       --chat--toggle--background: #16324f;
       --chat--message--user--background: #c9a14a;
       --chat--button--background--primary: #c9a14a;
+
+      --chat--header--padding: 1.25rem 1.5rem;
+      --chat--heading--font-size: 1.7em;
+      --chat--subtitle--line-height: 1.4;
+    }
+
+    /* ---- Centered header: logo → title → subtitle ---- */
+    .chat-header {
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      text-align: center !important;
+      gap: 4px;
+    }
+    .chat-header::before {
+      content: "";
+      display: block;
+      width: 150px;
+      height: 46px;
+      margin: 0 auto 4px;
+      background-image: url("https://www.paradiserealestate.es/crm/pages/agencies/paradisepro/assets/logofooter.svg");
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+    }
+    .chat-header h1 {
+      margin: 0 !important;
+      line-height: 1.15 !important;
+    }
+    .chat-header p {
+      margin: 0 !important;
+      opacity: 0.9;
     }
   </style>
 </head>
@@ -52,22 +62,23 @@
   <script type="module">
     import { createChat } from 'https://cdn.jsdelivr.net/npm/@n8n/chat/dist/chat.bundle.es.js';
     createChat({
-  webhookUrl: 'https://n8n.patom.dev/webhook/b1f5269f-a52e-46e7-aff2-ea4103f5eae0/chat',
-  mode: 'window',
-  showWelcomeScreen: false,
-  initialMessages: [
-    'Welcome to Paradise Real Estate 👋 This is Ana. How can I help you today?'
-  ],
-  i18n: {
-    en: {
-      title: "Let's find your paradise",
-      subtitle: "Ana's here 24/7 to find your Costa Blanca property",
-      footer: '',
-      getStarted: 'New Conversation',
-      inputPlaceholder: 'Type your message…',
-    },
-  },
-});
+      webhookUrl: 'https://n8n.patom.dev/webhook/b1f5269f-a52e-46e7-aff2-ea4103f5eae0/chat',
+      mode: 'window',
+      showWelcomeScreen: false,
+      initialMessages: [
+        "Hi, I'm Ana 👋 your Costa Blanca property guide.",
+        "Tell me what you're after — buy, sell, or a valuation — and I'll take it from there. Feel free to write in English, Español, Nederlands, Deutsch or Français 🌍"
+      ],
+      i18n: {
+        en: {
+          title: "Let's find your paradise",
+          subtitle: "Ana's here 24/7 to find your Costa Blanca property",
+          footer: '',
+          getStarted: 'New Conversation',
+          inputPlaceholder: 'Type your message…',
+        },
+      },
+    });
   </script>
 </body>
 </html>
