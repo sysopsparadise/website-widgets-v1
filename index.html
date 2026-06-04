@@ -12,12 +12,28 @@
   display: block;
   width: 150px;
   height: 46px;
-  margin: 0 0;
+  margin: 0 0 6px;
   background-image: url("https://www.paradiserealestate.es/crm/pages/agencies/paradisepro/assets/logofooter.svg");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: left center;
 }
+    /* Header polish — tighter spacing */
+:root {
+  --chat--header--padding: 1.25rem 1.5rem;
+  --chat--heading--font-size: 1.7em;
+  --chat--subtitle--line-height: 1.4;
+}
+.chat-header h1 {             /* title */
+  margin: 0 0 6px !important; /* kills the big gap before subtitle */
+  line-height: 1.15 !important;
+}
+.chat-header p {              /* subtitle */
+  margin: 0 !important;
+  opacity: 0.9;
+}
+    .chat-header { text-align: center; }
+  .chat-header::before { margin: 0 auto 6px !important; background-position: center; }
     body { font-family: system-ui, sans-serif; padding: 3rem; background: #f6f7f9; }
     :root {
       --chat--color--primary: #16324f;
