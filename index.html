@@ -6,6 +6,18 @@
   <title>Paradise Chat Test</title>
   <link href="https://cdn.jsdelivr.net/npm/@n8n/chat/dist/style.css" rel="stylesheet" />
   <style>
+    /* Logo above the title in the chat header */
+.chat-header::before {
+  content: "";
+  display: block;
+  width: 150px;
+  height: 46px;
+  margin: 0 0 10px;
+  background-image: url("https://www.paradiserealestate.es/crm/pages/agencies/paradisepro/assets/logofooter.svg");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: left center;
+}
     body { font-family: system-ui, sans-serif; padding: 3rem; background: #f6f7f9; }
     :root {
       --chat--color--primary: #16324f;
