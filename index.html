@@ -11,7 +11,6 @@
       padding: 3rem;
       background: #f6f7f9;
     }
-
     /* ---- Brand colors + header sizing ---- */
     :root {
       --chat--color--primary: #16324f;
@@ -23,12 +22,10 @@
       --chat--toggle--background: #16324f;
       --chat--message--user--background: #c9a14a;
       --chat--button--background--primary: #c9a14a;
-
       --chat--header--padding: 1.25rem 1.5rem;
       --chat--heading--font-size: 1.7em;
       --chat--subtitle--line-height: 1.4;
     }
-
     /* ---- Centered header: logo → title → subtitle ---- */
     .chat-header {
       display: flex !important;
@@ -48,13 +45,44 @@
       background-repeat: no-repeat;
       background-position: center;
     }
-    .chat-header h1 {
-      margin: 0 !important;
-      line-height: 1.15 !important;
+    .chat-header h1 { margin: 0 !important; line-height: 1.15 !important; }
+    .chat-header p { margin: 0 !important; opacity: 0.9; }
+
+    /* ---- Message avatars (Ana = navy bot, user = gold person) ---- */
+    .chat-message { position: relative; }
+
+    /* Ana's avatar — left of bot messages */
+    .chat-message-from-bot { margin-left: 44px; }
+    .chat-message-from-bot::before {
+      content: "";
+      position: absolute;
+      left: -44px;
+      bottom: 0;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background-color: #16324f;
+      background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='18'%20height='18'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='white'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M12%208V4H8'/%3E%3Crect%20width='16'%20height='12'%20x='4'%20y='8'%20rx='2'/%3E%3Cpath%20d='M2%2014h2'/%3E%3Cpath%20d='M20%2014h2'/%3E%3Cpath%20d='M15%2013v2'/%3E%3Cpath%20d='M9%2013v2'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: 18px;
     }
-    .chat-header p {
-      margin: 0 !important;
-      opacity: 0.9;
+
+    /* User's avatar — right of user messages */
+    .chat-message-from-user { margin-right: 44px; }
+    .chat-message-from-user::before {
+      content: "";
+      position: absolute;
+      right: -44px;
+      bottom: 0;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background-color: #c9a14a;
+      background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='18'%20height='18'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='white'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M19%2021v-2a4%204%200%200%200-4-4H9a4%204%200%200%200-4%204v2'/%3E%3Ccircle%20cx='12'%20cy='7'%20r='4'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: 18px;
     }
   </style>
 </head>
@@ -66,8 +94,8 @@
       mode: 'window',
       showWelcomeScreen: false,
       initialMessages: [
-        "🤖 Hi, I'm Ana 👋 your Costa Blanca property guide.",
-        "🤖 Tell me what you're after buy, sell, or a valuation and I'll take it from there. Feel free to write in English, Español, Nederlands, Deutsch or Français 🌍"
+        "Hi, I'm Ana 👋 your Costa Blanca property guide.",
+        "Tell me what you're after — buy, sell, or a valuation — and I'll take it from there. Feel free to write in English, Español, Nederlands, Deutsch or Français 🌍"
       ],
       i18n: {
         en: {
