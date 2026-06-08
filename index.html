@@ -115,7 +115,18 @@
     import { createChat } from 'https://cdn.jsdelivr.net/npm/@n8n/chat/dist/chat.bundle.es.js';
 
     const CHAT_WEBHOOK_URL = 'https://n8n.patom.dev/webhook/b1f5269f-a52e-46e7-aff2-ea4103f5eae0/chat';
+
+    /*
+      TEST URL:
+      Use this while your logger workflow is in "Listen for test event" mode.
+    */
     const LOGGER_WEBHOOK_URL = 'https://n8n.patom.dev/webhook-test/website-chat-logger';
+
+    /*
+      PRODUCTION URL:
+      When your logger workflow is active, replace the line above with this:
+      const LOGGER_WEBHOOK_URL = 'https://n8n.patom.dev/webhook/website-chat-logger';
+    */
 
     function getConversationId() {
       let conversationId = localStorage.getItem('paradise_chat_conversation_id');
@@ -137,14 +148,16 @@
       if (!cleanMessage) return;
 
       try {
-        await fetch(LOGGER_WEBHOOK_URL, {
+        console.log('Sending to logger:', role, cleanMessage);
+
+        const response = await fetch(LOGGER_WEBHOOK_URL, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
             conversation_id: getConversationId(),
-            role,
+            role: role,
             message: cleanMessage,
             timestamp: new Date().toISOString(),
             name: extraData.name || null,
@@ -155,71 +168,15 @@
             user_agent: navigator.userAgent
           })
         });
+
+        console.log('Logger response:', response.status);
       } catch (error) {
         console.error('Chat logger failed:', error);
       }
     }
 
-    async function wrappedFetch(input, init = {}) {
-      const url = typeof input === 'string' ? input : input?.url;
-
-      const isChatWebhook =
-        typeof url === 'string' &&
-        url.includes('/webhook/b1f5269f-a52e-46e7-aff2-ea4103f5eae0/chat');
-
-      if (!isChatWebhook) {
-        return fetch(input, init);
-      }
-
-      let requestBody = null;
-
-      try {
-        requestBody = JSON.parse(init.body || '{}');
-      } catch (error) {
-        requestBody = {};
-      }
-
-      const userMessage =
-        requestBody.chatInput ||
-        requestBody.message ||
-        requestBody.text ||
-        requestBody.input ||
-        '';
-
-      await logWebsiteChatMessage('user', userMessage);
-
-      const response = await fetch(input, init);
-      const clonedResponse = response.clone();
-
-      try {
-        const responseData = await clonedResponse.json();
-
-        const botMessage =
-          responseData.output ||
-          responseData.text ||
-          responseData.message ||
-          responseData.response ||
-          responseData.answer ||
-          responseData.data?.output ||
-          responseData.data?.text ||
-          '';
-
-        await logWebsiteChatMessage('bot', botMessage);
-      } catch (error) {
-        console.error('Could not read bot response for logging:', error);
-      }
-
-      return response;
-    }
-
     createChat({
       webhookUrl: CHAT_WEBHOOK_URL,
-
-      webhookConfig: {
-        method: 'POST',
-        headers: {},
-        fetch: wrappedFetch
-      },
 
       mode: 'window',
       showWelcomeScreen: false,
@@ -247,6 +204,83 @@
         },
       },
     });
+
+    /*
+      Message observer:
+      This watches the n8n chat UI and logs every new user/bot message.
+    */
+    const alreadyLoggedMessages = new Set();
+
+    function getMessageText(messageEl) {
+      const text =
+        messageEl.innerText ||
+        messageEl.textContent ||
+        '';
+
+      return String(text)
+        .replace(/\r?\n|\r/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    function getMessageRole(messageEl) {
+      if (messageEl.classList.contains('chat-message-from-user')) {
+        return 'user';
+      }
+
+      if (messageEl.classList.contains('chat-message-from-bot')) {
+        return 'bot';
+      }
+
+      return null;
+    }
+
+    function logExistingChatMessages() {
+      const messageElements = document.querySelectorAll('.chat-message');
+
+      messageElements.forEach((messageEl) => {
+        const role = getMessageRole(messageEl);
+        const cleanText = getMessageText(messageEl);
+
+        if (!role || !cleanText) return;
+
+        /*
+          Skip initial welcome messages if you do not want them saved.
+          Remove this block if you want to save initial messages too.
+        */
+        const isInitialMessage =
+          cleanText.includes("Hi, I'm Ana") ||
+          cleanText.includes("Tell me what you're after");
+
+        if (isInitialMessage) return;
+
+        const uniqueKey = role + ':' + cleanText;
+
+        if (alreadyLoggedMessages.has(uniqueKey)) return;
+
+        alreadyLoggedMessages.add(uniqueKey);
+        logWebsiteChatMessage(role, cleanText);
+      });
+    }
+
+    function startChatMessageObserver() {
+      const observer = new MutationObserver(() => {
+        logExistingChatMessages();
+      });
+
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        characterData: true
+      });
+
+      logExistingChatMessages();
+    }
+
+    /*
+      Wait for the n8n chat widget to render before observing messages.
+    */
+    setTimeout(startChatMessageObserver, 1200);
   </script>
 </body>
 </html>
