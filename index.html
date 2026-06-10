@@ -298,6 +298,7 @@
       <div class="paradise-voice-status-header">
         <strong>Ana Voice Assistant</strong>
       </div>
+
       <div class="paradise-voice-status-body">
         <div class="paradise-pulse"></div>
         <div id="paradise-voice-status-text">Connecting to Ana...</div>
@@ -309,18 +310,14 @@
     <button id="paradise-ai-end-call-btn">End call</button>
   </div>
 
-  <script type="module">
-    import { createChat } from 'https://cdn.jsdelivr.net/npm/@n8n/chat/dist/chat.bundle.es.js';
-    import Vapi from 'https://cdn.jsdelivr.net/npm/@vapi-ai/web/+esm';
-
-    const CHAT_WEBHOOK_URL = 'https://n8n.patom.dev/webhook/b1f5269f-a52e-46e7-aff2-ea4103f5eae0/chat';
-    const LOGGER_WEBHOOK_URL = 'https://n8n.patom.dev/webhook/website-chat-logger';
-
+  <!-- Main launcher logic. This loads first, so Talk to Ana always works. -->
+  <script>
     const VAPI_PUBLIC_KEY = '9585658c-2c48-4824-b6ec-aca50aac826e';
     const VAPI_ASSISTANT_ID = '9b1c1276-181f-4255-a532-d20ee1d40b88';
 
-    const vapi = new Vapi(VAPI_PUBLIC_KEY);
-    let isVapiCallActive = false;
+    let paradiseVapi = null;
+    let paradiseVapiLoading = false;
+    let paradiseCallActive = false;
 
     const mainBtn = document.getElementById('paradise-ai-main-btn');
     const backBtn = document.getElementById('paradise-ai-back-btn');
@@ -330,6 +327,202 @@
     const voiceBtn = document.getElementById('paradise-open-voice');
     const voiceStatus = document.getElementById('paradise-voice-status');
     const voiceStatusText = document.getElementById('paradise-voice-status-text');
+
+    function openN8nChat() {
+      if (typeof window.paradiseOpenChat === 'function') {
+        window.paradiseOpenChat();
+        return;
+      }
+
+      const selectors = [
+        '.chat-window-toggle',
+        '.chat-window-toggle button',
+        '[aria-label="Open chat"]',
+        '[aria-label="Toggle chat"]'
+      ];
+
+      for (const selector of selectors) {
+        const button = document.querySelector(selector);
+
+        if (button) {
+          button.click();
+          return;
+        }
+      }
+
+      console.warn('n8n chat button not found yet.');
+    }
+
+    function closeN8nChatIfOpen() {
+      const chatWindow =
+        document.querySelector('.chat-window') ||
+        document.querySelector('.chat-layout') ||
+        document.querySelector('.chat-window-wrapper');
+
+      if (!chatWindow) return;
+
+      const selectors = [
+        '[aria-label="Close chat"]',
+        '[aria-label="Toggle chat"]',
+        '.chat-window-toggle',
+        '.chat-window-toggle button'
+      ];
+
+      for (const selector of selectors) {
+        const button = document.querySelector(selector);
+
+        if (button) {
+          button.click();
+          return;
+        }
+      }
+    }
+
+    async function loadVapiClient() {
+      if (paradiseVapi) {
+        return paradiseVapi;
+      }
+
+      if (paradiseVapiLoading) {
+        return null;
+      }
+
+      paradiseVapiLoading = true;
+      voiceStatusText.textContent = 'Loading Ana voice assistant...';
+
+      try {
+        const module = await import('https://cdn.jsdelivr.net/npm/@vapi-ai/web/+esm');
+        const Vapi = module.default;
+
+        paradiseVapi = new Vapi(VAPI_PUBLIC_KEY);
+
+        paradiseVapi.on('call-start', function () {
+          paradiseCallActive = true;
+          document.body.classList.add('paradise-call-active');
+          voiceStatus.classList.add('active');
+          voiceStatusText.textContent = 'You are connected with Ana. You can speak now.';
+        });
+
+        paradiseVapi.on('call-end', function () {
+          paradiseCallActive = false;
+          document.body.classList.remove('paradise-call-active');
+          voiceStatusText.textContent = 'Call ended.';
+        });
+
+        paradiseVapi.on('error', function (error) {
+          console.error('Vapi error:', error);
+          paradiseCallActive = false;
+          document.body.classList.remove('paradise-call-active');
+          voiceStatus.classList.add('active');
+          voiceStatusText.textContent = 'Voice call error. Please allow microphone access and try again.';
+        });
+
+        return paradiseVapi;
+      } catch (error) {
+        console.error('Failed to load Vapi:', error);
+        voiceStatusText.textContent = 'Could not load voice assistant. Please check browser console.';
+        return null;
+      } finally {
+        paradiseVapiLoading = false;
+      }
+    }
+
+    async function startVapiCall() {
+      document.body.classList.add('paradise-mode-selected');
+      document.body.classList.add('paradise-call-active');
+
+      voiceStatus.classList.add('active');
+      voiceStatusText.textContent = 'Connecting to Ana...';
+
+      const client = await loadVapiClient();
+
+      if (!client) {
+        document.body.classList.remove('paradise-call-active');
+        return;
+      }
+
+      try {
+        await client.start(VAPI_ASSISTANT_ID);
+      } catch (error) {
+        console.error('Vapi start error:', error);
+        voiceStatusText.textContent = 'Could not start the call. Please allow microphone access and try again.';
+        document.body.classList.remove('paradise-call-active');
+      }
+    }
+
+    function stopVapiCall() {
+      try {
+        if (paradiseVapi) {
+          paradiseVapi.stop();
+        }
+      } catch (error) {
+        console.error('Vapi stop error:', error);
+      }
+
+      paradiseCallActive = false;
+      document.body.classList.remove('paradise-call-active');
+      voiceStatusText.textContent = 'Call ended.';
+    }
+
+    mainBtn.addEventListener('click', function () {
+      menu.classList.toggle('active');
+    });
+
+    chatBtn.addEventListener('click', function () {
+      menu.classList.remove('active');
+      voiceStatus.classList.remove('active');
+
+      if (paradiseCallActive) {
+        stopVapiCall();
+      }
+
+      document.body.classList.add('paradise-mode-selected');
+      document.body.classList.remove('paradise-call-active');
+
+      setTimeout(function () {
+        openN8nChat();
+      }, 300);
+    });
+
+    voiceBtn.addEventListener('click', function () {
+      menu.classList.remove('active');
+      closeN8nChatIfOpen();
+      startVapiCall();
+    });
+
+    backBtn.addEventListener('click', function () {
+      if (paradiseCallActive) {
+        stopVapiCall();
+      }
+
+      closeN8nChatIfOpen();
+
+      document.body.classList.remove('paradise-mode-selected');
+      document.body.classList.remove('paradise-call-active');
+
+      voiceStatus.classList.remove('active');
+      menu.classList.add('active');
+    });
+
+    endCallBtn.addEventListener('click', function () {
+      stopVapiCall();
+    });
+
+    document.addEventListener('click', function (event) {
+      const launcher = document.getElementById('paradise-ai-launcher');
+
+      if (!launcher.contains(event.target)) {
+        menu.classList.remove('active');
+      }
+    });
+  </script>
+
+  <!-- n8n Chat + Logger. If this fails, launcher button still works. -->
+  <script type="module">
+    import { createChat } from 'https://cdn.jsdelivr.net/npm/@n8n/chat/dist/chat.bundle.es.js';
+
+    const CHAT_WEBHOOK_URL = 'https://n8n.patom.dev/webhook/b1f5269f-a52e-46e7-aff2-ea4103f5eae0/chat';
+    const LOGGER_WEBHOOK_URL = 'https://n8n.patom.dev/webhook/website-chat-logger';
 
     function getConversationId() {
       let conversationId = localStorage.getItem('paradise_chat_conversation_id');
@@ -385,17 +578,14 @@
       showWelcomeScreen: false,
       chatSessionKey: 'sessionId',
       chatInputKey: 'chatInput',
-
       metadata: {
         conversation_id: getConversationId(),
         source: window.location.href
       },
-
       initialMessages: [
         "Hi, I'm Ana 👋 your Costa Blanca property guide.",
         "Tell me what you're after — buy, sell, or a valuation — and I'll take it from there. Feel free to write in English, Español, Nederlands, Deutsch or Français 🌍"
       ],
-
       i18n: {
         en: {
           title: "Let's find your paradise",
@@ -406,6 +596,26 @@
         }
       }
     });
+
+    window.paradiseOpenChat = function () {
+      const selectors = [
+        '.chat-window-toggle',
+        '.chat-window-toggle button',
+        '[aria-label="Open chat"]',
+        '[aria-label="Toggle chat"]'
+      ];
+
+      for (const selector of selectors) {
+        const button = document.querySelector(selector);
+
+        if (button) {
+          button.click();
+          return;
+        }
+      }
+
+      console.warn('n8n chat button not found yet.');
+    };
 
     const alreadyLoggedMessages = new Set();
 
@@ -455,7 +665,7 @@
     }
 
     function startChatMessageObserver() {
-      const observer = new MutationObserver(() => {
+      const observer = new MutationObserver(function () {
         logExistingChatMessages();
       });
 
@@ -469,151 +679,6 @@
     }
 
     setTimeout(startChatMessageObserver, 1200);
-
-    function openN8nChat() {
-      const selectors = [
-        '.chat-window-toggle',
-        '.chat-window-toggle button',
-        '[aria-label="Open chat"]',
-        '[aria-label="Toggle chat"]'
-      ];
-
-      for (const selector of selectors) {
-        const button = document.querySelector(selector);
-
-        if (button) {
-          button.click();
-          return;
-        }
-      }
-
-      console.warn('n8n chat button not found yet.');
-    }
-
-    function closeN8nChatIfOpen() {
-      const chatWindow =
-        document.querySelector('.chat-window') ||
-        document.querySelector('.chat-layout') ||
-        document.querySelector('.chat-window-wrapper');
-
-      if (!chatWindow) return;
-
-      const selectors = [
-        '[aria-label="Close chat"]',
-        '[aria-label="Toggle chat"]',
-        '.chat-window-toggle',
-        '.chat-window-toggle button'
-      ];
-
-      for (const selector of selectors) {
-        const button = document.querySelector(selector);
-
-        if (button) {
-          button.click();
-          return;
-        }
-      }
-    }
-
-    async function startVapiCall() {
-      try {
-        document.body.classList.add('paradise-mode-selected');
-        document.body.classList.add('paradise-call-active');
-
-        voiceStatus.classList.add('active');
-        voiceStatusText.textContent = 'Connecting to Ana...';
-
-        await vapi.start(VAPI_ASSISTANT_ID);
-      } catch (error) {
-        console.error('Vapi start error:', error);
-        voiceStatusText.textContent = 'Could not start the call. Please check microphone permission and Vapi settings.';
-        document.body.classList.remove('paradise-call-active');
-      }
-    }
-
-    function stopVapiCall() {
-      try {
-        vapi.stop();
-      } catch (error) {
-        console.error('Vapi stop error:', error);
-      }
-
-      isVapiCallActive = false;
-      document.body.classList.remove('paradise-call-active');
-      voiceStatusText.textContent = 'Call ended.';
-    }
-
-    vapi.on('call-start', function () {
-      isVapiCallActive = true;
-      document.body.classList.add('paradise-call-active');
-      voiceStatus.classList.add('active');
-      voiceStatusText.textContent = 'You are connected with Ana. You can speak now.';
-    });
-
-    vapi.on('call-end', function () {
-      isVapiCallActive = false;
-      document.body.classList.remove('paradise-call-active');
-      voiceStatusText.textContent = 'Call ended.';
-    });
-
-    vapi.on('error', function (error) {
-      console.error('Vapi error:', error);
-      voiceStatus.classList.add('active');
-      voiceStatusText.textContent = 'Voice call error. Please allow microphone access and try again.';
-      document.body.classList.remove('paradise-call-active');
-    });
-
-    mainBtn.addEventListener('click', function () {
-      menu.classList.toggle('active');
-    });
-
-    chatBtn.addEventListener('click', function () {
-      menu.classList.remove('active');
-      voiceStatus.classList.remove('active');
-
-      if (isVapiCallActive) {
-        stopVapiCall();
-      }
-
-      document.body.classList.add('paradise-mode-selected');
-      document.body.classList.remove('paradise-call-active');
-
-      setTimeout(function () {
-        openN8nChat();
-      }, 300);
-    });
-
-    voiceBtn.addEventListener('click', function () {
-      menu.classList.remove('active');
-      closeN8nChatIfOpen();
-      startVapiCall();
-    });
-
-    backBtn.addEventListener('click', function () {
-      if (isVapiCallActive) {
-        stopVapiCall();
-      }
-
-      closeN8nChatIfOpen();
-
-      document.body.classList.remove('paradise-mode-selected');
-      document.body.classList.remove('paradise-call-active');
-
-      voiceStatus.classList.remove('active');
-      menu.classList.add('active');
-    });
-
-    endCallBtn.addEventListener('click', function () {
-      stopVapiCall();
-    });
-
-    document.addEventListener('click', function (event) {
-      const launcher = document.getElementById('paradise-ai-launcher');
-
-      if (!launcher.contains(event.target)) {
-        menu.classList.remove('active');
-      }
-    });
   </script>
 </body>
 </html>
