@@ -6,108 +6,232 @@
   <title>Paradise Chat Test</title>
   <link href="https://cdn.jsdelivr.net/npm/@n8n/chat/dist/style.css" rel="stylesheet" />
   <style>
-    body {
-      font-family: system-ui, sans-serif;
-      padding: 3rem;
-      background: #f6f7f9;
-    }
-    /* ---- Brand colors + header sizing ---- */
     :root {
+      --navy: #16324f;
+      --navy-dark: #122a42;
+      --gold: #c9a14a;
+      --surface: #ffffff;
+      --ink: #18314a;
+      --muted: #64748b;
       --chat--color--primary: #16324f;
       --chat--color--primary-shade-50: #122a42;
       --chat--color--secondary: #c9a14a;
       --chat--color-secondary-shade-50: #b8923f;
       --chat--color-dark: #16324f;
       --chat--border-radius: 12px;
-      --chat--toggle--background: #16324f;
       --chat--message--user--background: #c9a14a;
       --chat--button--background--primary: #c9a14a;
-      --chat--header--padding: 1.25rem 1.5rem;
-      --chat--heading--font-size: 1.7em;
-      --chat--subtitle--line-height: 1.4;
+      --chat--header--padding: 1.1rem 1.5rem;
+      --chat--heading--font-size: 1.45em;
     }
-    /* ---- Centered header: logo → title → subtitle ---- */
-    .chat-header {
-      display: flex !important;
-      flex-direction: column !important;
-      align-items: center !important;
-      text-align: center !important;
-      gap: 4px;
-    }
-    .chat-header::before {
-      content: "";
-      display: block;
-      width: 150px;
-      height: 46px;
-      margin: 0 auto 4px;
-      background-image: url("https://www.paradiserealestate.es/crm/pages/agencies/paradisepro/assets/logofooter.svg");
-      background-size: contain;
-      background-repeat: no-repeat;
-      background-position: center;
-    }
-    .chat-header h1 { margin: 0 !important; line-height: 1.15 !important; }
-    .chat-header p { margin: 0 !important; opacity: 0.9; }
 
-    /* ---- Message avatars ---- */
-    .chat-message {
-      position: relative !important;
-      overflow: visible !important;   /* the fix — was clipping the avatar */
+    * { box-sizing: border-box; }
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      padding: 2rem;
+      color: var(--ink);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(135deg, #f6f7f9, #e9eff5);
     }
-    /* Ana (bot) — navy circle, left of her messages */
-    .chat-message-from-bot { margin-left: 46px; }
-    .chat-message-from-bot::before {
-      content: "";
-      position: absolute;
-      left: -46px;
-      bottom: 0;
-      width: 34px;
-      height: 34px;
+    .demo-copy { max-width: 560px; text-align: center; }
+    .demo-copy h1 { margin: 0 0 .65rem; color: var(--navy); }
+    .demo-copy p { margin: 0; color: var(--muted); line-height: 1.6; }
+
+    /* One shared launcher and panel: only one assistant interface is visible at a time. */
+    .ana-launcher {
+      position: fixed;
+      z-index: 10000;
+      right: max(22px, env(safe-area-inset-right));
+      bottom: max(22px, env(safe-area-inset-bottom));
+      display: grid;
+      place-items: center;
+      width: 62px;
+      height: 62px;
+      border: 0;
       border-radius: 50%;
-      background-color: #16324f;
-      background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='18'%20height='18'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='white'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M12%208V4H8'/%3E%3Crect%20width='16'%20height='12'%20x='4'%20y='8'%20rx='2'/%3E%3Cpath%20d='M2%2014h2'/%3E%3Cpath%20d='M20%2014h2'/%3E%3Cpath%20d='M15%2013v2'/%3E%3Cpath%20d='M9%2013v2'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: center;
-      background-size: 18px;
+      cursor: pointer;
+      color: white;
+      background: var(--navy);
+      box-shadow: 0 12px 30px rgba(22, 50, 79, .32);
+      transition: transform .2s ease, background .2s ease;
     }
-    /* User — gold circle, right of their messages */
-    .chat-message-from-user { margin-right: 46px; }
-    .chat-message-from-user::before {
-      content: "";
-      position: absolute;
-      right: -46px;
-      bottom: 0;
-      width: 34px;
-      height: 34px;
-      border-radius: 50%;
-      background-color: #c9a14a;
-      background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='18'%20height='18'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='white'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M19%2021v-2a4%204%200%200%200-4-4H9a4%204%200%200%200-4%204v2'/%3E%3Ccircle%20cx='12'%20cy='7'%20r='4'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: center;
-      background-size: 18px;
+    .ana-launcher:hover { transform: translateY(-2px) scale(1.03); background: var(--navy-dark); }
+    .ana-launcher svg { width: 28px; height: 28px; }
+
+    .ana-panel {
+      position: fixed;
+      z-index: 10001;
+      right: max(22px, env(safe-area-inset-right));
+      bottom: max(96px, calc(env(safe-area-inset-bottom) + 78px));
+      width: min(390px, calc(100vw - 32px));
+      height: min(630px, calc(100dvh - 118px));
+      overflow: hidden;
+      border-radius: 18px;
+      background: var(--surface);
+      box-shadow: 0 24px 70px rgba(15, 35, 55, .28);
+      transition: height .22s ease;
     }
+    .ana-panel.is-chooser { width: 92px; height: 156px; border-radius: 24px; background: var(--navy); }
+    [hidden] { display: none !important; }
+    .panel-screen { height: 100%; }
+
+    .chooser { display: grid; min-height: 100%; place-items: center; padding: 12px; }
+    .mode-buttons { display: grid; justify-items: center; gap: 10px; }
+    .mode-button {
+      display: grid; place-items: center; width: 58px; height: 58px; padding: 0;
+      border: 0; border-radius: 50%; cursor: pointer; color: #292d34; background: #fbfaf7;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, .16); transition: transform .18s ease, box-shadow .18s ease, color .18s ease, background .18s ease;
+    }
+    .mode-button.voice-choice { color: #292d34; }
+    .mode-button:hover, .mode-button:focus-visible { outline: none; transform: scale(1.06); color: #fff; background: var(--gold); box-shadow: 0 5px 13px rgba(0, 0, 0, .26); }
+    .mode-button.voice-choice:hover, .mode-button.voice-choice:focus-visible { background: var(--gold); }
+    .mode-button svg { width: 25px; height: 25px; }
+
+    .panel-topbar {
+      display: flex; align-items: center; gap: 7px; min-height: 55px; padding: 8px 11px;
+      border-bottom: 1px solid #e8edf1; background: #fff;
+    }
+    .panel-topbar strong { flex: 1; color: var(--navy); }
+    .icon-button { display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 9px; cursor: pointer; color: var(--navy); background: transparent; }
+    .icon-button:hover { background: #f0f4f7; }
+    .icon-button svg { width: 21px; height: 21px; }
+    .panel-content { height: calc(100% - 55px); }
+
+    /* n8n fills this part of our panel; it does not create its own floating button. */
+    #n8n-chat { height: 100%; }
+    #n8n-chat .chat-wrapper { height: 100% !important; }
+    #n8n-chat .chat-layout { height: 100% !important; border-radius: 0 !important; }
+    /* Keep the input footer, but hide only n8n's attribution link. */
+    #n8n-chat [class*="powered"],
+    #n8n-chat a[href*="n8n.io"] { display: none !important; }
+    .chat-header { display: flex !important; flex-direction: column !important; align-items: center !important; text-align: center !important; gap: 3px; }
+    .chat-header::before { content: ""; display: block; width: 122px; height: 33px; background: url("https://www.paradiserealestate.es/crm/pages/agencies/paradisepro/assets/logofooter.svg") center / contain no-repeat; }
+    .chat-header h1, .chat-header p { margin: 0 !important; }
+    .chat-header p { opacity: .9; }
+    .chat-message { position: relative !important; overflow: visible !important; }
+    .chat-message-from-bot { margin-left: 42px; }
+    .chat-message-from-user { margin-right: 42px; }
+    .chat-message-from-bot::before, .chat-message-from-user::before { content: ""; position: absolute; bottom: 0; width: 31px; height: 31px; border-radius: 50%; background-position: center; background-repeat: no-repeat; background-size: 17px; }
+    .chat-message-from-bot::before { left: -41px; background-color: var(--navy); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='16' height='12' x='4' y='8' rx='2'/%3E%3Cpath d='M12 8V4H8M2 14h2m16 0h2M9 13v2m6-2v2'/%3E%3C/svg%3E"); }
+    .chat-message-from-user::before { right: -41px; background-color: var(--gold); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='12' cy='7' r='4'/%3E%3C/svg%3E"); }
+
+    .voice-back {
+      position: fixed; z-index: 10002; right: max(22px, env(safe-area-inset-right));
+      bottom: max(96px, calc(env(safe-area-inset-bottom) + 78px)); display: grid; place-items: center;
+      width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50%; cursor: pointer; color: #fff;
+      background: var(--navy); box-shadow: 0 6px 16px rgba(22, 50, 79, .25);
+    }
+    .voice-back:hover { background: var(--navy-dark); }
+    .voice-back svg { width: 22px; height: 22px; }
+    @media (max-width: 480px) { .ana-panel { right: 16px; bottom: 88px; width: calc(100vw - 32px); height: min(650px, calc(100dvh - 106px)); } .ana-launcher { right: 16px; bottom: 16px; } }
   </style>
 </head>
 <body>
+  <main class="demo-copy">
+    <h1>Paradise Real Estate</h1>
+    <p>Demo page: click Ana in the lower-right corner, then choose text chat or voice.</p>
+  </main>
+
+  <button class="ana-launcher" id="ana-launcher" type="button" aria-label="Open Ana assistant" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2m16 0h2M9 13v2m6-2v2"/></svg>
+  </button>
+
+  <section class="ana-panel" id="ana-panel" aria-label="Ana assistant" hidden>
+    <div class="panel-screen chooser" id="chooser-screen">
+      <div class="mode-buttons">
+        <button class="mode-button" id="open-chat" type="button" aria-label="Open text chat">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.5 9.8 9.8 0 0 1-4.6-1.1L3 20l1.3-3.8A8.2 8.2 0 0 1 3 11.5a8.5 8.5 0 0 1 9-8.5 8.5 8.5 0 0 1 9 8.5Z"/><path d="M8 12h.01M12 12h.01M16 12h.01"/></svg>
+        </button>
+        <button class="mode-button voice-choice" id="open-voice" type="button" aria-label="Open voice assistant">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v4m-4 0h8"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="panel-screen" id="chat-screen" hidden>
+      <div class="panel-topbar"><button class="icon-button back-button" type="button" aria-label="Choose a different option"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg></button><strong>Chat with Ana</strong><button class="icon-button close-button" type="button" aria-label="Close Ana assistant">×</button></div>
+      <div class="panel-content"><div id="n8n-chat"></div></div>
+    </div>
+
+  </section>
+
+  <!-- Vapi's original widget is intentionally kept unchanged. -->
+  <script src="https://unpkg.com/@vapi-ai/client-sdk-react/dist/embed/widget.umd.js" async type="text/javascript"></script>
+  <vapi-widget id="vapi-widget" hidden
+    public-key="9585658c-2c48-4824-b6ec-aca50aac826e"
+    assistant-id="9b1c1276-181f-4255-a532-d20ee1d40b88"
+    mode="voice"
+    theme="light"
+    size="compact"
+    position="bottom-right"
+    main-label="Talk with Ana"
+    start-button-text="Start Call with Ana"
+    end-button-text="End Call"
+    empty-voice-message="Ana- AI Receptionist. Ask about properties in Jávea or Dénia, pricing, or viewings."
+    button-base-color="#16324f"
+    button-accent-color="#ffffff"
+    accent-color="#14B8A6"></vapi-widget>
+  <button class="voice-back" id="voice-back" type="button" hidden aria-label="Back to chat and voice options" title="Other options"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg></button>
+
   <script type="module">
     import { createChat } from 'https://cdn.jsdelivr.net/npm/@n8n/chat/dist/chat.bundle.es.js';
-    createChat({
-      webhookUrl: 'https://n8n.patom.dev/webhook/b1f5269f-a52e-46e7-aff2-ea4103f5eae0/chat',
-      mode: 'window',
-      showWelcomeScreen: false,
-      initialMessages: [
-        "Hi, I'm Ana 👋 your Costa Blanca property guide.",
-        "Tell me what you're after — buy, sell, or a valuation — and I'll take it from there. Feel free to write in English, Español, Nederlands, Deutsch or Français 🌍"
-      ],
-      i18n: {
-        en: {
-          title: "Let's find your paradise",
-          subtitle: "Ana's here 24/7 to find your Costa Blanca property",
-          footer: '',
-          getStarted: 'New Conversation',
-          inputPlaceholder: 'Type your message…',
-        },
-      },
-    });
+
+    const panel = document.querySelector('#ana-panel');
+    const launcher = document.querySelector('#ana-launcher');
+    const screens = {
+      chooser: document.querySelector('#chooser-screen'),
+      chat: document.querySelector('#chat-screen'),
+    };
+    let chatReady = false;
+
+    function showScreen(name) {
+      panel.hidden = false;
+      panel.classList.toggle('is-chooser', name === 'chooser');
+      launcher.setAttribute('aria-expanded', 'true');
+      Object.entries(screens).forEach(([screenName, screen]) => { screen.hidden = screenName !== name; });
+    }
+    function closePanel() {
+      panel.hidden = true;
+      launcher.setAttribute('aria-expanded', 'false');
+    }
+    function startChat() {
+      showScreen('chat');
+      if (chatReady) return;
+      chatReady = true;
+      createChat({
+        webhookUrl: 'https://n8n.patom.dev/webhook/b1f5269f-a52e-46e7-aff2-ea4103f5eae0/chat',
+        target: '#n8n-chat',
+        mode: 'fullscreen',
+        showWelcomeScreen: false,
+        initialMessages: ["Hi, I'm Ana 👋 your Costa Blanca property guide.", "Tell me what you're after — buy, sell, or a valuation — and I'll take it from there. Feel free to write in English, Español, Nederlands, Deutsch or Français 🌍"],
+        i18n: { en: { title: "Let's find your paradise", subtitle: "Ana's here 24/7 to find your Costa Blanca property", footer: '', getStarted: 'New Conversation', inputPlaceholder: 'Type your message…' } },
+      });
+    }
+
+    const vapiWidget = document.querySelector('#vapi-widget');
+    const voiceBack = document.querySelector('#voice-back');
+    function showVoiceWidget() {
+      panel.hidden = true;
+      launcher.hidden = true;
+      vapiWidget.hidden = false;
+      voiceBack.hidden = false;
+    }
+    function returnFromVoice() {
+      vapiWidget.hidden = true;
+      voiceBack.hidden = true;
+      launcher.hidden = false;
+      showScreen('chooser');
+    }
+
+    launcher.addEventListener('click', () => panel.hidden ? showScreen('chooser') : closePanel());
+    document.querySelector('#open-chat').addEventListener('click', startChat);
+    document.querySelector('#open-voice').addEventListener('click', showVoiceWidget);
+    document.querySelectorAll('.back-button').forEach(button => button.addEventListener('click', () => showScreen('chooser')));
+    document.querySelectorAll('.close-button').forEach(button => button.addEventListener('click', closePanel));
+    voiceBack.addEventListener('click', returnFromVoice);
   </script>
 </body>
 </html>
